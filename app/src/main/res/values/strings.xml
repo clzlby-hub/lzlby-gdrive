@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Google 相册</string>
+    <string name="screensaver_name">Google相册</string>
+    <string name="login_title">连接 Google 硬盘</string>
+    <string name="login_subtitle">请在手机或电脑浏览器中授权访问您的 Google Drive</string>
+    <string name="login_waiting">等待手机扫码授权中…</string>
+    <string name="set_screensaver_success">已成功将此相册设为电视系统屏保！</string>
+</resources>
