@@ -21,7 +21,7 @@ object HttpClientProvider {
             }
 
             override fun connectFailed(uri: URI?, sa: SocketAddress?, ioe: IOException?) {
-                // Silently fallback to next proxy without throwing unhandled exceptions
+                android.util.Log.w("HttpClientProvider", "Proxy failed for $uri via $sa: ${ioe?.message}")
             }
         }
 

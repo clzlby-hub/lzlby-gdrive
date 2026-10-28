@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +45,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import org.moontechlab.gdrivetv.R
 import org.moontechlab.gdrivetv.data.api.GoogleDriveApi
 import org.moontechlab.gdrivetv.data.model.DriveItem
 import org.moontechlab.gdrivetv.data.store.PreferenceStore
@@ -280,13 +282,13 @@ fun BrowseScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.Cloud,
+                        painter = painterResource(id = R.drawable.ic_gdrive_logo),
                         contentDescription = null,
                         tint = AccentGreen,
                         modifier = Modifier.size(28.dp)
                     )
                     Text(
-                        text = "Google 硬盘",
+                        text = "Google云盘",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp

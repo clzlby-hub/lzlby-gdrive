@@ -312,13 +312,13 @@ fun PhotoViewerScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Text(
-                            text = "移入 Google 硬盘回收站",
+                            text = "移入 Google 云盘回收站",
                             color = Color.White,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "确定将《${currentPhoto.name}》移入回收站吗？\n(可在电脑或手机 Google 硬盘回收站保留 30 天并随时恢复)",
+                            text = "确定将《${currentPhoto.name}》移入回收站吗？\n(可在电脑或手机 Google 云盘回收站保留 30 天并随时恢复)",
                             color = Color(0xFFCBD5E1),
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center,

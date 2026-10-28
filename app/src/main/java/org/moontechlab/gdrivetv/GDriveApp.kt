@@ -20,6 +20,7 @@ class GDriveApp : Application(), ImageLoaderFactory {
 
     override fun newImageLoader(): ImageLoader {
         return ImageLoader.Builder(this)
+            .logger(DebugLogger())
             .okHttpClient(HttpClientProvider.client)
             .memoryCache {
                 MemoryCache.Builder(this)
