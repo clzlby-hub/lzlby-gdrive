@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -54,13 +55,27 @@ import java.util.Locale
 @OptIn(UnstableApi::class)
 @Composable
 fun VideoPlayerScreen(
-    item: DriveItem,
+    videos: List<DriveItem>,
+    initialIndex: Int,
     api: GoogleDriveApi,
     authManager: GoogleOAuthManager,
     onClose: () -> Unit
 ) {
+    if (videos.isEmpty()) {
+        onClose()
+        return
+    }
+
     val context = LocalContext.current
     val focusRequester = remember { FocusRequester() }
+
+    var currentIndex by remember {
+        mutableIntStateOf(initialIndex.coerceIn(0, (videos.size - 1).coerceAtLeast(0)))
+    }
+    val currentItem = videos.getOrNull(currentIndex) ?: run {
+        onClose()
+        return
+    }
 
     var isPlaying by remember { mutableStateOf(true) }
     var isBuffering by remember { mutableStateOf(true) }
@@ -69,6 +84,7 @@ fun VideoPlayerScreen(
     var bufferedPosition by remember { mutableLongStateOf(0L) }
     var duration by remember { mutableLongStateOf(0L) }
     var showControls by remember { mutableStateOf(true) }
+    var isAutoAdvancing by remember { mutableStateOf(false) }
 
     val player = remember {
         // Plan A: Lightweight adaptive buffer (quick 1s start, 1.5s rebuffer recovery, dynamic memory allocation)
@@ -101,9 +117,14 @@ fun VideoPlayerScreen(
                 if (playbackState == Player.STATE_READY) {
                     duration = player.duration.coerceAtLeast(0L)
                     errorMessage = null
+                    isAutoAdvancing = false
                 } else if (playbackState == Player.STATE_ENDED) {
                     isPlaying = false
-                    showControls = true
+                    if (currentIndex < videos.size - 1) {
+                        isAutoAdvancing = true
+                    } else {
+                        showControls = true
+                    }
                 }
             }
 
@@ -113,6 +134,7 @@ fun VideoPlayerScreen(
 
             override fun onPlayerError(error: PlaybackException) {
                 isBuffering = false
+                isAutoAdvancing = false
                 errorMessage = "视频播放失败: ${error.localizedMessage ?: "网络或解码错误"}"
             }
         }
@@ -143,17 +165,33 @@ fun VideoPlayerScreen(
         }
     }
 
-    // Prepare media source with OkHttp proxy stream (Plan A: direct stream, zero disk write overhead)
-    LaunchedEffect(item) {
+    // Auto-advance loop when video reaches the end
+    LaunchedEffect(isAutoAdvancing, currentIndex) {
+        if (isAutoAdvancing) {
+            delay(1200L)
+            if (isAutoAdvancing && currentIndex < videos.size - 1) {
+                currentIndex++
+            }
+            isAutoAdvancing = false
+        }
+    }
+
+    // Prepare media source with OkHttp proxy stream whenever currentItem changes
+    LaunchedEffect(currentItem.id) {
+        isAutoAdvancing = false
         isBuffering = true
         errorMessage = null
+        currentPosition = 0L
+        bufferedPosition = 0L
+        duration = 0L
+        showControls = true
         try {
-            val (url, headers) = if (item.thumbnailLink?.contains("/pw/") == true) {
-                val base = item.thumbnailLink.substringBefore("=")
+            val (url, headers) = if (currentItem.thumbnailLink?.contains("/pw/") == true) {
+                val base = currentItem.thumbnailLink.substringBefore("=")
                 Pair("$base=m37", emptyMap<String, String>())
             } else {
                 val token = authManager.getValidAccessToken() ?: ""
-                Pair(api.getHighResMediaUrl(item.id), mapOf("Authorization" to "Bearer $token"))
+                Pair(api.getHighResMediaUrl(currentItem.id), mapOf("Authorization" to "Bearer $token"))
             }
 
             val dataSourceFactory = OkHttpDataSource.Factory(HttpClientProvider.client)
@@ -163,7 +201,8 @@ fun VideoPlayerScreen(
             val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
                 .createMediaSource(MediaItem.fromUri(url))
 
-            player.setMediaSource(mediaSource)
+            player.stop()
+            player.setMediaSource(mediaSource, /* resetPosition = */ true)
             player.prepare()
             player.play()
         } catch (e: Exception) {
@@ -192,7 +231,11 @@ fun VideoPlayerScreen(
                     showControls = true
                     when (keyEvent.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-                            if (player.isPlaying) {
+                            if (isAutoAdvancing) {
+                                isAutoAdvancing = false
+                                player.seekTo(0L)
+                                player.play()
+                            } else if (player.isPlaying) {
                                 player.pause()
                             } else {
                                 if (player.playbackState == Player.STATE_ENDED) {
@@ -203,19 +246,47 @@ fun VideoPlayerScreen(
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_MEDIA_REWIND -> {
+                            isAutoAdvancing = false
                             val target = (player.currentPosition - 10000L).coerceAtLeast(0L)
                             player.seekTo(target)
                             currentPosition = target
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+                            isAutoAdvancing = false
                             val max = if (player.duration > 0) player.duration else Long.MAX_VALUE
                             val target = (player.currentPosition + 10000L).coerceAtMost(max)
                             player.seekTo(target)
                             currentPosition = target
                             true
                         }
-                        KeyEvent.KEYCODE_BACK -> {
+                        // Next video: DPAD_DOWN or dedicated remote next buttons
+                        KeyEvent.KEYCODE_DPAD_DOWN,
+                        KeyEvent.KEYCODE_MEDIA_NEXT,
+                        KeyEvent.KEYCODE_CHANNEL_DOWN,
+                        KeyEvent.KEYCODE_PAGE_DOWN -> {
+                            isAutoAdvancing = false
+                            if (currentIndex < videos.size - 1) {
+                                currentIndex++
+                                true
+                            } else {
+                                true
+                            }
+                        }
+                        // Previous video: DPAD_UP or dedicated remote previous buttons
+                        KeyEvent.KEYCODE_DPAD_UP,
+                        KeyEvent.KEYCODE_MEDIA_PREVIOUS,
+                        KeyEvent.KEYCODE_CHANNEL_UP,
+                        KeyEvent.KEYCODE_PAGE_UP -> {
+                            isAutoAdvancing = false
+                            if (currentIndex > 0) {
+                                currentIndex--
+                                true
+                            } else {
+                                true
+                            }
+                        }
+                        KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_MEDIA_STOP -> {
                             onClose()
                             true
                         }
@@ -253,6 +324,40 @@ fun VideoPlayerScreen(
             }
         }
 
+        // Floating Auto-Advance Next Toast Banner
+        AnimatedVisibility(
+            visible = isAutoAdvancing,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 40.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = Color(0xD90F172A),
+                border = BorderStroke(1.dp, Color(0x66FFFFFF))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Text(
+                        text = "即将播放下一段 (${currentIndex + 2}/${videos.size}): ${videos.getOrNull(currentIndex + 1)?.name ?: ""}",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
         // Error message
         errorMessage?.let { err ->
             Box(
@@ -268,7 +373,7 @@ fun VideoPlayerScreen(
                 ) {
                     Text(text = "⚠️ 无法播放该视频", color = Color(0xFFF87171), fontSize = 20.sp)
                     Text(text = err, color = Color.LightGray, fontSize = 14.sp)
-                    Text(text = "按遥控器【返回键】退出", color = Color.Gray, fontSize = 12.sp)
+                    Text(text = "按遥控器【返回键】退出，或按【▼】尝试播放下一段", color = Color.Gray, fontSize = 12.sp)
                 }
             }
         }
@@ -289,19 +394,40 @@ fun VideoPlayerScreen(
                     .padding(horizontal = 28.dp, vertical = 20.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Title and Apple-style frosted status pill
+                    // Title and Apple-style frosted status pill + Index badge
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = item.name,
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f, fill = false)
+                        ) {
+                            Text(
+                                text = currentItem.name,
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (videos.size > 1) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0x33FFFFFF)
+                                ) {
+                                    Text(
+                                        text = "${currentIndex + 1} / ${videos.size}",
+                                        color = Color(0xFFE2E8F0),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
+                        }
 
                         Surface(
                             shape = RoundedCornerShape(999.dp),
@@ -373,8 +499,9 @@ fun VideoPlayerScreen(
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
                         )
+                        val navHint = if (videos.size > 1) "  • ▼ 下一段  • ▲ 上一段" else ""
                         Text(
-                            text = "• OK 暂停/播放  • ◀/▶ 快退/快进 10秒  • 返回 退出",
+                            text = "• OK 暂停/播放  • ◀/▶ 快退/快进$navHint  • 返回 退出",
                             color = Color(0xFF94A3B8),
                             fontSize = 13.sp
                         )

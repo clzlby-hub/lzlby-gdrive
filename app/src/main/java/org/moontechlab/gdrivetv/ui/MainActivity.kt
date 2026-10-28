@@ -27,6 +27,11 @@ data class ViewerParams(
     val isSlideshow: Boolean
 )
 
+data class VideoViewerParams(
+    val videos: List<DriveItem>,
+    val initialIndex: Int
+)
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var prefs: PreferenceStore
@@ -61,7 +66,7 @@ class MainActivity : ComponentActivity() {
             GDriveTvTheme {
                 var isLoggedIn by remember { mutableStateOf(prefs.isLoggedIn()) }
                 var viewerParams by remember { mutableStateOf<ViewerParams?>(null) }
-                var playingVideoItem by remember { mutableStateOf<DriveItem?>(null) }
+                var videoViewerParams by remember { mutableStateOf<VideoViewerParams?>(null) }
 
                 if (!isLoggedIn) {
                     LoginScreen(
@@ -81,8 +86,8 @@ class MainActivity : ComponentActivity() {
                             onPhotoClick = { photos, idx ->
                                 viewerParams = ViewerParams(photos, idx, isSlideshow = false)
                             },
-                            onVideoClick = { videoItem ->
-                                playingVideoItem = videoItem
+                            onVideoClick = { videos, idx ->
+                                videoViewerParams = VideoViewerParams(videos, idx)
                             },
                             onStartSlideshow = { photos ->
                                 viewerParams = ViewerParams(photos, 0, isSlideshow = true)
@@ -108,13 +113,14 @@ class MainActivity : ComponentActivity() {
                         }
 
                         // Full-screen video player overlay
-                        playingVideoItem?.let { videoItem ->
+                        videoViewerParams?.let { params ->
                             VideoPlayerScreen(
-                                item = videoItem,
+                                videos = params.videos,
+                                initialIndex = params.initialIndex,
                                 api = api,
                                 authManager = authManager,
                                 onClose = {
-                                    playingVideoItem = null
+                                    videoViewerParams = null
                                 }
                             )
                         }

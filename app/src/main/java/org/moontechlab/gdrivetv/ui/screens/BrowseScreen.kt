@@ -94,7 +94,7 @@ fun BrowseScreen(
     prefs: PreferenceStore,
     api: GoogleDriveApi,
     onPhotoClick: (items: List<DriveItem>, startIndex: Int) -> Unit,
-    onVideoClick: (item: DriveItem) -> Unit,
+    onVideoClick: (videos: List<DriveItem>, initialIndex: Int) -> Unit,
     onStartSlideshow: (items: List<DriveItem>) -> Unit,
     onLogout: () -> Unit
 ) {
@@ -543,7 +543,9 @@ fun BrowseScreen(
                                     val idx = images.indexOf(item).coerceAtLeast(0)
                                     onPhotoClick(images, idx)
                                 } else if (item.isVideo) {
-                                    onVideoClick(item)
+                                    val videos = displayedItems.filter { it.isVideo }
+                                    val idx = videos.indexOf(item).coerceAtLeast(0)
+                                    onVideoClick(videos, idx)
                                 }
                             }
                         )
