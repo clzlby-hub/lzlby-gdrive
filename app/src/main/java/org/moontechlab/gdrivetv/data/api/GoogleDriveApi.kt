@@ -36,7 +36,21 @@ class GoogleDriveApi(
 
     private val diskCacheDir by lazy {
         try {
-            GDriveApp.instance.cacheDir.resolve("drive_folder_cache").apply { mkdirs() }
+            // Use filesDir for permanent persistence across TV reboots and low-memory conditions
+            val dir = GDriveApp.instance.filesDir.resolve("drive_folder_cache").apply { mkdirs() }
+            // Migrate legacy cache from cacheDir if present
+            try {
+                val oldDir = GDriveApp.instance.cacheDir.resolve("drive_folder_cache")
+                if (oldDir.exists() && oldDir.isDirectory) {
+                    oldDir.listFiles()?.forEach { oldFile ->
+                        val target = dir.resolve(oldFile.name)
+                        if (!target.exists()) {
+                            oldFile.copyTo(target, overwrite = true)
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+            dir
         } catch (_: Exception) {
             null
         }

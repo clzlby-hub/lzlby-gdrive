@@ -209,7 +209,7 @@ fun BrowseScreen(
         if (cached != null && cached.files.isNotEmpty()) {
             driveItems = cached.files
             isDriveLoading = false
-        } else {
+        } else if (driveItems.isEmpty()) {
             isDriveLoading = true
         }
         driveError = null
@@ -219,6 +219,7 @@ fun BrowseScreen(
             res.onSuccess {
                 driveItems = it.files
             }.onFailure {
+                // Keep showing cached items if transient network/VPN error occurs on boot
                 if (driveItems.isEmpty()) {
                     driveError = it.message ?: "读取文件夹失败"
                 }
@@ -754,30 +755,19 @@ fun DriveItemCard(
                         }
                     },
                     error = {
+                        // Apple TV Style Video Card: Clean, deep sapphire backdrop
                         Box(
-                            modifier = Modifier.fillMaxSize().background(CardDark),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFF1E293B)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Movie,
-                                    contentDescription = null,
-                                    tint = Color(0xFF8E8E93),
-                                    modifier = Modifier.size(36.dp)
-                                )
-                                if (thumbUrl.isEmpty()) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "云端转码中",
-                                        color = Color(0xFFAAAAAA),
-                                        fontSize = 10.sp,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
+                            Icon(
+                                Icons.Outlined.Movie,
+                                contentDescription = null,
+                                tint = Color(0x33FFFFFF),
+                                modifier = Modifier.size(38.dp)
+                            )
                         }
                     }
                 )
@@ -785,8 +775,9 @@ fun DriveItemCard(
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
-                            .background(Color(0x99000000), CircleShape),
+                            .size(46.dp)
+                            .background(Color(0xB30F172A), CircleShape)
+                            .border(BorderStroke(1.5.dp, Color(0x99FFFFFF)), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -794,6 +785,28 @@ fun DriveItemCard(
                             contentDescription = "播放视频",
                             tint = Color.White,
                             modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+                // Top-right clean format pill (e.g. "MOV", "MP4")
+                val ext = item.name.substringAfterLast('.', "").uppercase().takeIf { it.isNotEmpty() } ?: "视频"
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp),
+                    contentAlignment = Alignment.TopEnd
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xB3000000),
+                        border = BorderStroke(0.5.dp, Color(0x66FFFFFF))
+                    ) {
+                        Text(
+                            text = ext,
+                            color = Color.White,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
                 }

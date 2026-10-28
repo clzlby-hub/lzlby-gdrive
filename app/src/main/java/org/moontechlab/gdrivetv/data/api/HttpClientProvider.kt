@@ -3,16 +3,31 @@ package org.moontechlab.gdrivetv.data.api
 import okhttp3.OkHttpClient
 import org.moontechlab.gdrivetv.GDriveApp
 import org.moontechlab.gdrivetv.data.store.PreferenceStore
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Proxy
+import java.net.ProxySelector
+import java.net.SocketAddress
+import java.net.URI
 import java.util.concurrent.TimeUnit
 
 object HttpClientProvider {
     val client: OkHttpClient by lazy {
         val clashProxy = Proxy(Proxy.Type.HTTP, InetSocketAddress("127.0.0.1", 7890))
+        val adaptiveProxySelector = object : ProxySelector() {
+            override fun select(uri: URI?): List<Proxy> {
+                // If 127.0.0.1:7890 is not ready upon cold boot, gracefully fallback to direct / TUN mode
+                return listOf(clashProxy, Proxy.NO_PROXY)
+            }
+
+            override fun connectFailed(uri: URI?, sa: SocketAddress?, ioe: IOException?) {
+                // Silently fallback to next proxy without throwing unhandled exceptions
+            }
+        }
+
         OkHttpClient.Builder()
-            .proxy(clashProxy)
-            .connectTimeout(20, TimeUnit.SECONDS)
+            .proxySelector(adaptiveProxySelector)
+            .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val original = chain.request()
@@ -35,4 +50,3 @@ object HttpClientProvider {
             .build()
     }
 }
-
