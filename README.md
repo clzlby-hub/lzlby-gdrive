@@ -1,4 +1,4 @@
-# lzlby-gooog-photo
+# lzlby-gdrive
 
 > 专为 **Android TV / Google TV / 索尼 BRAVIA** 打造的 Google Photos 与 Google Drive 大屏画廊及极速视频播放器。采用 Apple TV 灵动美学界面，配备定制级轻量流式视频管道与智能相册轮播。
 
@@ -60,13 +60,13 @@
 #### 1. 编译 APK
 确保本地已安装 JDK 17 及 Android SDK：
 ```bash
-git clone https://github.com/clzlby-hub/lzlby-gooog-photo.git
-cd lzlby-gooog-photo
+git clone https://github.com/clzlby-hub/lzlby-gdrive.git
+cd lzlby-gdrive
 
 # 编译 Debug / Release APK
-./gradlew assembleDebug
+./gradlew assembleRelease
 ```
-编译生成的 APK 位于：`app/build/outputs/apk/debug/app-debug.apk`
+编译生成的 APK 位于：`app/build/outputs/apk/release/gdrive.apk`（或从 Releases 页面直接下载 `gdrive.apk`）
 
 #### 2. 无线 ADB 安装到电视
 确认电视已开启「开发者选项」与「ADB 调试」并处于同一局域网：
@@ -75,7 +75,7 @@ cd lzlby-gooog-photo
 adb connect 192.168.1.100:5555
 
 # 安装 APK
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/release/gdrive.apk
 ```
 
 ---
