@@ -20,10 +20,25 @@ data class DriveItem(
         get() = mimeType == "application/vnd.google-apps.folder"
 
     val isImage: Boolean
-        get() = mimeType.startsWith("image/")
+        get() = mimeType.startsWith("image/") ||
+                name.endsWith(".jpg", ignoreCase = true) ||
+                name.endsWith(".jpeg", ignoreCase = true) ||
+                name.endsWith(".png", ignoreCase = true) ||
+                name.endsWith(".heic", ignoreCase = true) ||
+                name.endsWith(".webp", ignoreCase = true) ||
+                name.endsWith(".gif", ignoreCase = true)
 
     val isVideo: Boolean
-        get() = mimeType.startsWith("video/")
+        get() = mimeType.startsWith("video/") ||
+                name.endsWith(".mov", ignoreCase = true) ||
+                name.endsWith(".mp4", ignoreCase = true) ||
+                name.endsWith(".m4v", ignoreCase = true) ||
+                name.endsWith(".mkv", ignoreCase = true) ||
+                name.endsWith(".webm", ignoreCase = true) ||
+                name.endsWith(".avi", ignoreCase = true)
+
+    val isMedia: Boolean
+        get() = isImage || isVideo
 
     val dateInfo: DateInfo? by lazy {
         // 1. Check EXIF takenTime (e.g. "2026:04:19 14:40:11" or "2026-04-19...")

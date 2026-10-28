@@ -138,52 +138,52 @@ fun BrowseScreen(
     var selectedMonth by remember(currentFolder.id) { mutableStateOf<Int?>(null) }
     var selectedDay by remember(currentFolder.id, selectedMonth) { mutableStateOf<Int?>(null) }
 
-    val allPhotos = remember(driveItems) { driveItems.filter { it.isImage } }
-    val isPhotoFolder = remember(driveItems) { allPhotos.isNotEmpty() }
+    val allMedia = remember(driveItems) { driveItems.filter { it.isMedia } }
+    val isMediaFolder = remember(driveItems) { allMedia.isNotEmpty() }
 
     // Fast O(N) grouping computed once
-    val photosByMonth = remember(allPhotos) {
-        allPhotos.groupBy { it.dateInfo?.month }
+    val mediaByMonth = remember(allMedia) {
+        allMedia.groupBy { it.dateInfo?.month }
     }
-    val availableMonths = remember(photosByMonth) {
-        photosByMonth.keys.filterNotNull().sorted()
+    val availableMonths = remember(mediaByMonth) {
+        mediaByMonth.keys.filterNotNull().sorted()
     }
 
-    val currentMonthPhotos = remember(allPhotos, selectedMonth, photosByMonth) {
+    val currentMonthMedia = remember(allMedia, selectedMonth, mediaByMonth) {
         if (selectedMonth != null) {
-            photosByMonth[selectedMonth] ?: emptyList()
+            mediaByMonth[selectedMonth] ?: emptyList()
         } else {
-            allPhotos
+            allMedia
         }
     }
 
-    val photosByDay = remember(currentMonthPhotos) {
-        currentMonthPhotos.groupBy { it.dateInfo?.day }
+    val mediaByDay = remember(currentMonthMedia) {
+        currentMonthMedia.groupBy { it.dateInfo?.day }
     }
-    val availableDays = remember(photosByDay) {
-        photosByDay.keys.filterNotNull().sorted()
+    val availableDays = remember(mediaByDay) {
+        mediaByDay.keys.filterNotNull().sorted()
     }
 
     val displayedItems = remember(
         driveItems,
-        isPhotoFolder,
-        currentMonthPhotos,
+        isMediaFolder,
+        currentMonthMedia,
         selectedDay,
         folderSort,
         photoSort
     ) {
-        if (isPhotoFolder) {
-            val photos = if (selectedDay != null) {
-                photosByDay[selectedDay] ?: emptyList()
+        if (isMediaFolder) {
+            val media = if (selectedDay != null) {
+                mediaByDay[selectedDay] ?: emptyList()
             } else {
-                currentMonthPhotos
+                currentMonthMedia
             }
-            val sortedPhotos = when (photoSort) {
-                PhotoSortOption.DATE_DESC -> photos.sortedWith(compareByDescending { it.sortKey })
-                PhotoSortOption.DATE_ASC -> photos.sortedWith(compareBy { it.sortKey })
+            val sortedMedia = when (photoSort) {
+                PhotoSortOption.DATE_DESC -> media.sortedWith(compareByDescending { it.sortKey })
+                PhotoSortOption.DATE_ASC -> media.sortedWith(compareBy { it.sortKey })
             }
             val folders = driveItems.filter { it.isFolder }
-            folders + sortedPhotos
+            folders + sortedMedia
         } else {
             when (folderSort) {
                 FolderSortOption.YEAR_DESC -> {
@@ -310,7 +310,7 @@ fun BrowseScreen(
                     // Button 1: Sort Option
                     TopActionButton(
                         icon = Icons.Outlined.SwapVert,
-                        label = if (isPhotoFolder) {
+                        label = if (isMediaFolder) {
                             when (photoSort) {
                                 PhotoSortOption.DATE_DESC -> "时间最新"
                                 PhotoSortOption.DATE_ASC -> "时间最早"
@@ -378,8 +378,8 @@ fun BrowseScreen(
                 }
             }
 
-            // Apple TV Style Month & Day Filter Bar (shown when inside photo folders with months or days)
-            if (!isDriveLoading && isPhotoFolder && (availableMonths.size > 1 || availableDays.size > 1)) {
+            // Apple TV Style Month & Day Filter Bar (shown when inside media folders with months or days)
+            if (!isDriveLoading && isMediaFolder && (availableMonths.size > 1 || availableDays.size > 1)) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -406,7 +406,7 @@ fun BrowseScreen(
                                 item {
                                     AppleFilterPill(
                                         label = "全部",
-                                        count = allPhotos.size,
+                                        count = allMedia.size,
                                         isSelected = selectedMonth == null,
                                         onClick = {
                                             selectedMonth = null
@@ -415,7 +415,7 @@ fun BrowseScreen(
                                     )
                                 }
                                 items(availableMonths) { m ->
-                                    val count = photosByMonth[m]?.size ?: 0
+                                    val count = mediaByMonth[m]?.size ?: 0
                                     AppleFilterPill(
                                         label = "${m}月",
                                         count = count,
@@ -450,13 +450,13 @@ fun BrowseScreen(
                                 item {
                                     AppleFilterPill(
                                         label = "全部日期",
-                                        count = currentMonthPhotos.size,
+                                        count = currentMonthMedia.size,
                                         isSelected = selectedDay == null,
                                         onClick = { selectedDay = null }
                                     )
                                 }
                                 items(availableDays) { d ->
-                                    val count = photosByDay[d]?.size ?: 0
+                                    val count = mediaByDay[d]?.size ?: 0
                                     AppleFilterPill(
                                         label = "${d}日",
                                         count = count,
@@ -555,7 +555,7 @@ fun BrowseScreen(
         // Apple TV Style Sort Dialog
         if (showSortDialog) {
             AppleTvSortDialog(
-                isPhotoFolder = isPhotoFolder,
+                isPhotoFolder = isMediaFolder,
                 currentFolderSort = folderSort,
                 currentPhotoSort = photoSort,
                 onSelectFolderSort = { folderSort = it },
@@ -756,12 +756,26 @@ fun DriveItemCard(
                             modifier = Modifier.fillMaxSize().background(CardDark),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                Icons.Outlined.Movie,
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(36.dp)
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Movie,
+                                    contentDescription = null,
+                                    tint = Color(0xFF8E8E93),
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                if (thumbUrl.isEmpty()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "云端转码中",
+                                        color = Color(0xFFAAAAAA),
+                                        fontSize = 10.sp,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
                         }
                     }
                 )

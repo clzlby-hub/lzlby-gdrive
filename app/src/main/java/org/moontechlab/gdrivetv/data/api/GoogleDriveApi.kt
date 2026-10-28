@@ -152,7 +152,7 @@ class GoogleDriveApi(
 
             val urlBuilder = BASE_URL.toHttpUrlOrNull()!!.newBuilder()
                 .addQueryParameter("q", query)
-                .addQueryParameter("fields", "nextPageToken,files(id,name,mimeType,size,modifiedTime,thumbnailLink,imageMediaMetadata)")
+                .addQueryParameter("fields", "nextPageToken,files(id,name,mimeType,size,modifiedTime,thumbnailLink,imageMediaMetadata,videoMediaMetadata)")
                 .addQueryParameter("pageSize", "1000")
                 .addQueryParameter("orderBy", "folder,modifiedTime desc")
 
@@ -197,7 +197,14 @@ class GoogleDriveApi(
                     for (i in 0 until filesArray.length()) {
                         val obj = filesArray.getJSONObject(i)
                         val imgMeta = obj.optJSONObject("imageMediaMetadata")
+                        val videoMeta = obj.optJSONObject("videoMediaMetadata")
                         val takenTime = imgMeta?.optString("time")?.takeIf { it.isNotEmpty() }
+                        val width = if (imgMeta != null && imgMeta.has("width")) imgMeta.optInt("width")
+                            else if (videoMeta != null && videoMeta.has("width")) videoMeta.optInt("width")
+                            else null
+                        val height = if (imgMeta != null && imgMeta.has("height")) imgMeta.optInt("height")
+                            else if (videoMeta != null && videoMeta.has("height")) videoMeta.optInt("height")
+                            else null
                         val item = DriveItem(
                             id = obj.getString("id"),
                             name = obj.getString("name"),
@@ -205,8 +212,8 @@ class GoogleDriveApi(
                             size = obj.optLong("size", 0L),
                             modifiedTime = obj.optString("modifiedTime"),
                             thumbnailLink = obj.optString("thumbnailLink").takeIf { it.isNotEmpty() },
-                            width = imgMeta?.optInt("width"),
-                            height = imgMeta?.optInt("height"),
+                            width = width,
+                            height = height,
                             takenTime = takenTime
                         )
                         allItems.add(item)
