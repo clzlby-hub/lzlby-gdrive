@@ -331,27 +331,27 @@ fun VideoPlayerScreen(
             exit = fadeOut(),
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 40.dp)
+                .padding(top = 28.dp)
         ) {
             Surface(
                 shape = RoundedCornerShape(999.dp),
-                color = Color(0xD90F172A),
-                border = BorderStroke(1.dp, Color(0x66FFFFFF))
+                color = Color(0xD90B1120),
+                border = BorderStroke(0.8.dp, Color(0x4DFFFFFF))
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     CircularProgressIndicator(
                         color = Color.White,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(14.dp),
                         strokeWidth = 2.dp
                     )
                     Text(
                         text = "即将播放下一段 (${currentIndex + 2}/${videos.size}): ${videos.getOrNull(currentIndex + 1)?.name ?: ""}",
                         color = Color.White,
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -378,22 +378,24 @@ fun VideoPlayerScreen(
             }
         }
 
-        // Apple TV Style Media HUD Overlay
+        // Apple TV Style Compact Media HUD Overlay
         AnimatedVisibility(
             visible = showControls || !isPlaying,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 24.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .padding(32.dp)
-                    .fillMaxWidth()
-                    .background(Color(0xD90F172A), RoundedCornerShape(16.dp))
-                    .border(BorderStroke(1.dp, Color(0x33FFFFFF)), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 28.dp, vertical = 20.dp)
+                    .widthIn(min = 520.dp, max = 740.dp)
+                    .fillMaxWidth(0.56f)
+                    .background(Color(0xD90B1120), RoundedCornerShape(14.dp))
+                    .border(BorderStroke(1.dp, Color(0x33FFFFFF)), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     // Title and Apple-style frosted status pill + Index badge
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -402,28 +404,28 @@ fun VideoPlayerScreen(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.weight(1f, fill = false)
                         ) {
                             Text(
                                 text = currentItem.name,
                                 color = Color.White,
-                                fontSize = 18.sp,
+                                fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                             if (videos.size > 1) {
                                 Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = Color(0x33FFFFFF)
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = Color(0x26FFFFFF)
                                 ) {
                                     Text(
-                                        text = "${currentIndex + 1} / ${videos.size}",
-                                        color = Color(0xFFE2E8F0),
-                                        fontSize = 12.sp,
+                                        text = "${currentIndex + 1}/${videos.size}",
+                                        color = Color(0xFFCBD5E1),
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Medium,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
                             }
@@ -431,25 +433,25 @@ fun VideoPlayerScreen(
 
                         Surface(
                             shape = RoundedCornerShape(999.dp),
-                            color = Color(0x33FFFFFF),
-                            border = BorderStroke(1.dp, Color(0x66FFFFFF))
+                            color = Color(0x26FFFFFF),
+                            border = BorderStroke(0.8.dp, Color(0x4DFFFFFF))
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Icon(
                                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                     contentDescription = if (isPlaying) "暂停" else "播放",
                                     tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(13.dp)
                                 )
                                 Text(
                                     text = if (isPlaying) "播放中" else "已暂停",
                                     color = Color.White,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
@@ -466,8 +468,8 @@ fun VideoPlayerScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(6.dp)
-                            .background(Color(0x33FFFFFF), RoundedCornerShape(3.dp))
+                            .height(4.dp)
+                            .background(Color(0x26FFFFFF), RoundedCornerShape(2.dp))
                     ) {
                         // Buffered progress (subtle translucent white ahead)
                         if (bufferedProgress > 0f) {
@@ -475,7 +477,7 @@ fun VideoPlayerScreen(
                                 modifier = Modifier
                                     .fillMaxWidth(fraction = bufferedProgress)
                                     .fillMaxHeight()
-                                    .background(Color(0x66FFFFFF), RoundedCornerShape(3.dp))
+                                    .background(Color(0x59FFFFFF), RoundedCornerShape(2.dp))
                             )
                         }
                         // Played progress (pure bright white)
@@ -483,7 +485,7 @@ fun VideoPlayerScreen(
                             modifier = Modifier
                                 .fillMaxWidth(fraction = progress)
                                 .fillMaxHeight()
-                                .background(Color.White, RoundedCornerShape(3.dp))
+                                .background(Color.White, RoundedCornerShape(2.dp))
                         )
                     }
 
@@ -495,15 +497,15 @@ fun VideoPlayerScreen(
                     ) {
                         Text(
                             text = "${formatDuration(currentPosition)} / ${formatDuration(duration)}",
-                            color = Color(0xFFE2E8F0),
-                            fontSize = 14.sp,
+                            color = Color(0xFFCBD5E1),
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
-                        val navHint = if (videos.size > 1) "  • ▼ 下一段  • ▲ 上一段" else ""
+                        val navHint = if (videos.size > 1) " • ▼/▲ 切集" else ""
                         Text(
-                            text = "• OK 暂停/播放  • ◀/▶ 快退/快进$navHint  • 返回 退出",
+                            text = "OK 暂停 • ◀/▶ 快退进$navHint • 返回 退出",
                             color = Color(0xFF94A3B8),
-                            fontSize = 13.sp
+                            fontSize = 11.sp
                         )
                     }
                 }
